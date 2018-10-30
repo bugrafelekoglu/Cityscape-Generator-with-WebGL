@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 vPosition;
+      attribute vec4 vColor;
+
+      varying vec4 fColor;
+      varying vec4 pos;
+
+      void main(){
+        gl_Position = vPosition;
+        fColor = vColor;
+        pos = vPosition;
+      }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+
+      varying vec4 pos;
+      varying vec4 fColor;
+
+      void main() {
+        vec4 fColor = fColor / 255.0;
+        gl_FragColor = vec4(fColor.r, fColor.g, fColor.b, fColor.a);
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="cityScape.js"></script>
+  </head>
+  <body>
+    <canvas id="gl-canvas" width="960" height="540">
+    Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+
+    <div>
+      Number of houses: 1 <input id="sliderN" type="range"
+       min="1" max="5" step="1" value="3" />
+       5
+    </div>
+    <div>
+      Max number of floors: 1 <input id="sliderM" type="range"
+       min="1" max="5" step="1" value="3" />
+       5
+    </div>
+
+    <button id="Generate" type="button">Generate</button>
+    <button id="Save" type="button">Save</button>
+    <button id="Load" type="button">Load</button>
+    <button id="FinishCloud" type="button">Finish Cloud</button>
+  </body>
+</html>
