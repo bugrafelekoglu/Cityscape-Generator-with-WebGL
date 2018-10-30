@@ -1,11 +1,13 @@
+// WebGL
 var gl;
-var points;
-var houseColors = [];
-var houseFloors = [];
-var clouds = [];
-var isCloudFinished = true;
-var n = 3;
-var m = 3;
+
+// Global variables
+var houseColors = []; // House colors array
+var houseFloors = []; // House floors array
+var clouds = [];  // Drawn cloud array
+var cloudInProgress = false; // Are there any cloud drawing process?
+var n = 3;  // Number of all houses, default to 3
+var m = 3;  // Maximum floors can houses have, default to 3
 
 // Constant dimension values
 const GAP = 0.2;
@@ -17,7 +19,8 @@ const CLOUD = -0.003;
 const GROUND = -0.004;
 const BUILDING = -0.005;
 const WINDOW = -0.006;
-const TREE = -0.007;
+const ROAD = -0.007;
+const TREE = -0.008;
 
 // Constant color values
 const TRANSPARENCY = vec4(0, 0, 0, 0);
@@ -26,11 +29,14 @@ const SUN_COLOR = vec4(255, 192, 0, 255);
 const CLOUD_COLOR = vec4(230, 230, 230, 255);
 const GROUND_COLOR = vec4(197, 90, 17, 255);
 const ROOF_COLOR = vec4(192, 0, 0, 255);
-const TREE_GREEN_COLOR = vec4(146, 208, 80, 255);
+const TREE_GREEN_COLOR_D = vec4(0, 137, 0, 255);
+const TREE_GREEN_COLOR_L = vec4(23, 197, 40, 255);
 const TREE_WOOD_COLOR = vec4(133, 60, 12, 255);
 const WINDOW_COLOR = vec4(180, 199, 231, 255);
+const ROAD_COLOR = vec4(60, 60, 60, 255);
+const PAVEMENT_COLOR = vec4(77, 77, 77, 255);
 
-window.onload = function init(){
+window.onload = function init() {
   var canvas = document.getElementById("gl-canvas");
   gl = WebGLUtils.setupWebGL(canvas);
   if (!gl) alert("WebGL isn't available");
@@ -50,141 +56,240 @@ window.onload = function init(){
 
   generateStreet(n, m);
   cloudMaker(program, canvas);
+  clickGenerateButton(program);
+  clickSaveButton();
+  clickLoadButton();
   render(program);
+};
+
+function render(program) {
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  drawSky(program);
+  drawClouds(program);
+  drawGround(program);
+  drawSun(program);
+  drawStreet(program, n, m);
+  drawRoad(program);
+}
+
+function clickGenerateButton(program) {
   var sliderN = document.getElementById("sliderN");
   var sliderM = document.getElementById("sliderM");
-
   var buttonG = document.getElementById("Generate");
+
+  // Listener for Generate button
   buttonG.addEventListener("click", function(event) {
     n = parseInt(sliderN.value);
     m = parseInt(sliderM.value);
     clouds = [];
-    isCloudFinished = true;
+    cloudInProgress = false;
     generateStreet(n, m);
     render(program);
   } );
-};
-
-function render(program) {
-  drawSky(program);
-  drawGround(program);
-  drawSun(program);
-  drawClouds(program);
-  drawStreet(program, n, m);
 }
 
+function clickSaveButton() {
+  var buttonS = document.getElementById("Save");
+
+  // Listener for Save button
+  buttonS.addEventListener("click", function(event) {
+
+  } );
+}
+
+function clickLoadButton() {
+  var buttonL = document.getElementById("Load");
+
+  // Listener for Load button
+  buttonL.addEventListener("click", function(event) {
+
+  } );
+}
+
+/***************************************************
+  Generates street floor size and colors of houses
+
+  Params:
+    program: shader program
+    n: number of all houses
+    m: maximum floors
+****************************************************/
 function generateStreet(n, m) {
   houseColors = [];
   houseFloors = [];
-  for( var i = 0; i < n; i++) {
-    var colorA = hsv2rgb(Math.random()*360, 70, 50);
-    var color = vec4( colorA[0], colorA[1], colorA[2], 255);
+  for(var i = 0; i < n; i++) {
+    //
+    var colorA = hsv2rgb(Math.random() * 360, 90, 75);
+    var color = vec4(colorA[0], colorA[1], colorA[2], 255);
     houseColors.push(color);
     houseFloors.push(Math.floor(Math.random() * m) + 1);
   }
 }
 
-function drawClouds(program) {
-  for(var i = 0; i < clouds.length; i++) {
-    var colors = [];
-    for(var j = 0; j < clouds[i].length; j++) {
-      var fancycolor = vec4(CLOUD_COLOR);
-      fancycolor[0] = (fancycolor[0] - 7*j)%256;
-      fancycolor[1] = (fancycolor[1] - 7*j)%256;
-      fancycolor[2] = (fancycolor[2] - 7*j)%256;
-      colors.push(fancycolor);
-    }
+/***************************************************
+  Draws the street (all the houses and trees)
 
-    processBuffers(program, colors, clouds[i]);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, clouds[i].length);
-  }
-}
-
+  Params:
+    program: shader program
+    n: number of all houses
+    m: maximum floors
+****************************************************/
 function drawStreet(program, n, m) {
-  //HOUSES
-  for( var i = 0; i < n; i++) {
+  // Draws all of the houses
+  for(var i = 0; i < n; i++) {
     drawHouse(program, houseFloors[i], i, n, houseColors[i]);
   }
 
-  //TREES
-  for( var i = 0; i < n - 1; i++) {
+  // Draws all of the trees
+  for(var i = 0; i < n - 1; i++) {
     drawTree(program, i, n)
   }
 }
 
-function drawHouse(program, floors, i, n, color) {
-  console.log(n);
-  var g = 0.05 - 0.005*n;
-  var a = (2 - (n + 1) * GAP) / n;
-  var winw = (a - 3*g) / 2;
-  var winh = 0.10;
-  var roofH = 0.15;
-  var houseH = g + floors*(g + winh);
-  var houseW = a;
+/***************************************************
+  Draws a house with respect to number of all houses
 
-  var houseX1 = GAP + i*(houseW + GAP) - 1;
-  var houseY1 = houseH - 0.40;
+  Params:
+    program: shader program
+    floors: how many floor does house have
+    i: index of house
+    n: number of all houses
+    color: color of house
+****************************************************/
+function drawHouse(program, floors, i, n, color) {
+  // Values for houses
+  var g = 0.05 - 0.005 * n; // Gap between windows
+  var roofH = 0.15; // Roof height
+  var houseW = (2 - (n + 1) * GAP) / n; // House width
+  var winw = (houseW - 3 * g) / 2;  // window width
+  var winh = 0.10;  // window height
+  var houseH = g + floors * (g + winh); // House height
+
+  // Coordinates of house
+  var houseX1 = GAP + i * (houseW + GAP) - 1;
+  var houseY1 = houseH - 0.38;
   var houseX2 = houseX1 + houseW;
   var houseY2 = houseY1 - houseH;
 
-  drawRectangle(program, vec2(houseX1, houseY1), vec2(houseX2, houseY2), color, BUILDING);
+  // Drawing house
+  drawRectangle(program, vec2(houseX1, houseY1),
+    vec2(houseX2, houseY2), color, BUILDING);
 
+  // Windows loop
   for(var j = 0; j < floors; j++) {
-    //LEFT
+    // Left
     var lwinx1 = houseX1 + g;
-    var lwiny1 = houseY1 - j*(winh + g) - g;
+    var lwiny1 = houseY1 - j * (winh + g) - g;
     var lwinx2 = lwinx1 + winw;
     var lwiny2 = lwiny1 - winh;
 
-    //RIGHT
+    // Right
     var rwinx1 = lwinx1 + g + winw;
     var rwiny1 = lwiny1;
     var rwinx2 = lwinx2 + winw + g;
     var rwiny2 = lwiny2;
 
+    // Drawing windows
     drawRectangle(program, vec2(lwinx1, lwiny1), vec2(lwinx2, lwiny2), WINDOW_COLOR, WINDOW);
     drawRectangle(program, vec2(rwinx1, rwiny1), vec2(rwinx2, rwiny2), WINDOW_COLOR, WINDOW);
   }
 
+  // Drawing Roof
   drawTriangle(program,
     vec2(houseX1, houseY1),
     vec2(houseX1 + houseW/2, houseY1 + roofH),
     vec2(houseX2, houseY1), ROOF_COLOR, BUILDING);
 }
 
-function drawTree(program, i, n) {
-  var a = (2 - (n + 1) * GAP) / n;
-  var circleCenter = vec2(GAP / 2 + (1 + i) * (GAP + a) - 1, - 0.25);
+/***************************************************
+  Draws a tree with respect to number of all houses
 
-  drawRectangle(program, vec2(circleCenter[0] - 0.01, - 0.30),
-    vec2(circleCenter[0] + 0.01, - 0.45), TREE_WOOD_COLOR, TREE);
-  drawCircle(program, circleCenter, 0.075, TREE_GREEN_COLOR, TREE_GREEN_COLOR, TREE);
+  Params:
+    program: shader program
+    i: index of tree
+    n: number of all houses
+****************************************************/
+function drawTree(program, i, n) {
+  var houseW = (2 - (n + 1) * GAP) / n;
+  var circleCenter = vec2(GAP / 2 + (1 + i) * (GAP + houseW) - 1, - 0.20);
+
+  drawRectangle(program, vec2(circleCenter[0] - 0.01, - 0.20),
+    vec2(circleCenter[0] + 0.01, - 0.40), TREE_WOOD_COLOR, TREE);
+  drawCircle(program, circleCenter, 0.075, TREE_GREEN_COLOR_D, TREE_GREEN_COLOR_L, TREE);
 }
 
+/***************************************************
+  Draws clouds using global clouds[] array
+
+  Param:
+    program: shader program
+****************************************************/
+function drawClouds(program) {
+  for(var i = 0; i < clouds.length; i++) {  // Loops every cloud
+    var colors = [];
+    for(var j = 0; j < clouds[i].length; j++) { // Loops every vertex of a cloud
+      var fancycolor = vec4(CLOUD_COLOR);
+      fancycolor[0] = (fancycolor[0] - 7 * j) % 256;
+      fancycolor[1] = (fancycolor[1] - 7 * j) % 256;
+      fancycolor[2] = (fancycolor[2] - 7 * j) % 256;
+      colors.push(fancycolor);
+    }
+
+    // Draws all clouds that drawn on canvas
+    processBuffers(program, colors, clouds[i]);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, clouds[i].length);
+  }
+}
+
+/***************************************************
+  Makes clouds with using coordinates of user clicks
+
+  Param:
+    program: shader program
+    canvas:
+****************************************************/
 function cloudMaker(program, canvas) {
   var button = document.getElementById("FinishCloud");
 
+  // Listener for finish cloud button
   button.addEventListener("click", function(event) {
-    isCloudFinished = true;
+    cloudInProgress = false;
   } );
 
+  // Listener for user clicks on the canvas
   canvas.addEventListener("click", function(event) {
-    var a = canvas.height / canvas.width;
+    // calibrating the coordinate system according to canvas size
+    var h = canvas.height / canvas.width;
     var betterX = event.clientX - 5;
     var betterY = event.clientY - 5;
     var clickPointX = 2 * betterX / canvas.width - 1;
-    var clickPointY = 2 * a * (betterY / canvas.height) - a;
-    var clickPoint = vec3(clickPointX, -clickPointY, CLOUD);
+    var clickPointY = 2 * h * (betterY / canvas.height) - h;
+    var clickPoint = vec3(clickPointX, - clickPointY, CLOUD);
 
-    if(isCloudFinished) {
-      var vertices = [];
+    // Checks if cloud finished
+    if(!cloudInProgress) {
+      var vertices = [];  // Vertex array of current cloud
       clouds.push(vertices);
-      isCloudFinished = false;
+      cloudInProgress = true;
     }
 
+    // Pushes the clicked point to the latest cloud vertex array
     clouds[clouds.length-1].push(clickPoint);
+
     render(program);
   } );
+}
+
+function drawRoad(program) {
+  drawRectangle(program, vec2(-1, -0.42), vec2(1, -1), ROAD_COLOR, ROAD);
+  drawRectangle(program, vec2(-1, -0.42), vec2(1, -0.38), PAVEMENT_COLOR, ROAD);
+
+  for(var i = 0; i < 21; i++) {
+    var leftTop = vec2(-1 + i / 10, -0.49);
+    var rightBottom = vec2(-0.97 + i / 10, -0.50);
+    drawRectangle(program, leftTop, rightBottom, CLOUD_COLOR, ROAD);
+  }
 }
 
 function drawSun(program) {
@@ -193,14 +298,24 @@ function drawSun(program) {
 }
 
 function drawGround(program) {
-  drawRectangle(program, vec2(-1, -0.28), vec2(1, -1), GROUND_COLOR, GROUND);
+  drawRectangle(program, vec2(-1, -0.30), vec2(1, -1), GROUND_COLOR, GROUND);
 }
 
 function drawSky(program) {
   drawRectangle(program, vec2(-1, 1), vec2(1, -1), SKY_COLOR, SKY);
 }
 
-//**********************  CIRCLE  **********************
+/***************************************************
+  Generic circle draw function
+
+  Param:
+    program: shader program
+    center: center point for circle
+    radius: radius of circle
+    color1: center color for circle
+    color2: additional sphere color for circle
+    depth: z value of circle
+****************************************************/
 function drawCircle(program, center, radius, color1, color2, depth) {
   var polyCount = 32;
   var vertices = [];
@@ -220,11 +335,20 @@ function drawCircle(program, center, radius, color1, color2, depth) {
   }
 
   processBuffers(program, colors, vertices);
-
   gl.drawArrays(gl.TRIANGLE_FAN, 0, polyCount + 2);
 }
 
-//**********************  TRIANGLE  **********************
+/***************************************************
+  Generic triangle draw function
+
+  Param:
+    program: shader program
+    pos1: first vertex position
+    pos2: second vertex position
+    pos3: third vertex position
+    color: color of triangle vertices
+    depth: z value of triangle
+****************************************************/
 function drawTriangle(program, pos1, pos2, pos3, color, depth) {
   var vertices = [
     vec3(pos1[0], pos1[1], depth),
@@ -239,11 +363,19 @@ function drawTriangle(program, pos1, pos2, pos3, color, depth) {
   ];
 
   processBuffers(program, colors, vertices);
-
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
-//**********************  RECTANGLE  **********************
+/***************************************************
+  Generic rectangle draw function
+
+  Param:
+    program: shader program
+    pos1: left top vertex position
+    pos2: right bottom vertex position
+    color: color of rectangle vertices
+    depth: z value of rectangle
+****************************************************/
 function drawRectangle(program, pos1, pos2, color, depth) {
   // Vertices of rectangle
   var vertices = [
@@ -262,11 +394,12 @@ function drawRectangle(program, pos1, pos2, color, depth) {
   ];
 
   processBuffers(program, colors, vertices);
-
   gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 }
 
-//**************  Buffers  **************
+/***************************************************
+  Color and Vertex buffers
+****************************************************/
 function processBuffers(program, colors, vertices) {
   // Load the color data into the GPU
   var cBuffer = gl.createBuffer();
@@ -289,8 +422,11 @@ function processBuffers(program, colors, vertices) {
   gl.enableVertexAttribArray(vPosition);
 }
 
-// HSV to RGB Converter
-// Taken from https://www.rapidtables.com/convert/color/hsv-to-rgb.html
+/*************************************************************************
+  HSV (Hue-Saturation-Value) to RGB (Red-Green-Blue) Converter
+
+  Taken from https://www.rapidtables.com/convert/color/hsv-to-rgb.html
+**************************************************************************/
 function hsv2rgb(h, s, v){
   var r, g, b;
 	if( h<0 ) h=0; if( s<0 ) s=0; if( v<0 ) v=0;
