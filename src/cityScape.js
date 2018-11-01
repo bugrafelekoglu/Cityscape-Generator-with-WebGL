@@ -11,6 +11,7 @@ var gl;
 
 // Global variables
 var cloudInProgress = false; // Are there any cloud drawing process?
+var isFileExist = false;
 var houseColors = []; // House colors array
 var houseFloors = []; // House floors array
 var clouds = [];  // Drawn cloud array
@@ -139,7 +140,7 @@ function clickLoadButton(program) {
 
   // Listener for Load button
   load.addEventListener("click", function(event) {
-    if(loadedHouseColors.length == 0) {
+    if(!isFileExist) {
       alert("You have either selected the wrong file or did not select a file");
     }
     else {
@@ -171,6 +172,8 @@ function chooseFile() {
       loadedHouseColors = json[1];
       loadedHouseFloors = json[2];
       loadedClouds = json[3];
+
+      isFileExist = true;
     };
     reader.readAsText(file);
   };
