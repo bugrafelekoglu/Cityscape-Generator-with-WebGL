@@ -1,11 +1,23 @@
+/*************************************
+*   Computer Graphics - Homework 1   *
+*   Cityscape Generator              *
+*                                    *
+*   Buğra Felekoğlu                  *
+*   21301200                         *
+*************************************/
+
 // WebGL
 var gl;
 
 // Global variables
+var cloudInProgress = false; // Are there any cloud drawing process?
 var houseColors = []; // House colors array
 var houseFloors = []; // House floors array
 var clouds = [];  // Drawn cloud array
-var cloudInProgress = false; // Are there any cloud drawing process?
+var loadedHouseColors = []; // Loaded house colors array
+var loadedHouseFloors = []; // Loaded floors array
+var loadedClouds = [];  // Loaded cloud array
+var loadedN = 0;
 var n = 3;  // Number of all houses, default to 3
 var m = 3;  // Maximum floors can houses have, default to 3
 
@@ -45,6 +57,8 @@ window.onload = function init() {
   var program = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(program);
 
+  dragElement(document.getElementById("UI"));
+
   // Configure WebGL
   gl.viewport(0, (- canvas.width + canvas.height) / 2, canvas.width, canvas.width);
   gl.clearColor(0, 0.69, 0.94, 1.0);
@@ -58,7 +72,8 @@ window.onload = function init() {
   cloudMaker(program, canvas);
   clickGenerateButton(program);
   clickSaveButton();
-  clickLoadButton();
+  clickLoadButton(program);
+  chooseFile();
   render(program);
 };
 
@@ -73,13 +88,16 @@ function render(program) {
   drawRoad(program);
 }
 
+/***************************************************
+  Generate button listener
+****************************************************/
 function clickGenerateButton(program) {
   var sliderN = document.getElementById("sliderN");
   var sliderM = document.getElementById("sliderM");
-  var buttonG = document.getElementById("Generate");
+  var generate = document.getElementById("Generate");
 
   // Listener for Generate button
-  buttonG.addEventListener("click", function(event) {
+  generate.addEventListener("click", function(event) {
     n = parseInt(sliderN.value);
     m = parseInt(sliderM.value);
     clouds = [];
@@ -89,22 +107,73 @@ function clickGenerateButton(program) {
   } );
 }
 
+/***************************************************
+  Save button listener
+****************************************************/
 function clickSaveButton() {
-  var buttonS = document.getElementById("Save");
+  var save = document.getElementById("Save");
+  var textbox = document.getElementById('Textbox');
 
   // Listener for Save button
-  buttonS.addEventListener("click", function(event) {
+  save.addEventListener("click", function(event) {
+    var link = document.createElement('a');
+    link.setAttribute('download', textbox.value);
+    var data = [n, houseColors, houseFloors, clouds];
+    link.href = makeTextFile(data);
+    document.body.appendChild(link);
 
+    // wait for the link to be added to the document
+    window.requestAnimationFrame(function () {
+      var event = new MouseEvent('click');
+      link.dispatchEvent(event);
+      document.body.removeChild(link);
+    } );
   } );
 }
 
-function clickLoadButton() {
-  var buttonL = document.getElementById("Load");
+/***************************************************
+  Load button listener
+****************************************************/
+function clickLoadButton(program) {
+  var load = document.getElementById("Load");
 
   // Listener for Load button
-  buttonL.addEventListener("click", function(event) {
+  load.addEventListener("click", function(event) {
+    if(loadedHouseColors.length == 0) {
+      alert("You have either selected the wrong file or did not select a file");
+    }
+    else {
+      cloudInProgress = false;
+      n = loadedN;
+      houseColors = loadedHouseColors;
+      houseFloors = loadedHouseFloors;
+      clouds = loadedClouds;
+    }
 
+    render(program);
   } );
+}
+
+/***************************************************
+  Onchange event listener for taking file
+****************************************************/
+function chooseFile() {
+  document.getElementById("File").onchange = function (e) {
+    var file = this.files[0];
+
+    var reader = new FileReader();
+    reader.onload = function (progressEvent) {
+      document.getElementById("FileText").innerHTML  = e.target.value.split('\\').pop();
+      var data = this.result;
+      var json = JSON.parse(data);
+
+      loadedN = json[0]
+      loadedHouseColors = json[1];
+      loadedHouseFloors = json[2];
+      loadedClouds = json[3];
+    };
+    reader.readAsText(file);
+  };
 }
 
 /***************************************************
@@ -285,6 +354,7 @@ function drawRoad(program) {
   drawRectangle(program, vec2(-1, -0.42), vec2(1, -1), ROAD_COLOR, ROAD);
   drawRectangle(program, vec2(-1, -0.42), vec2(1, -0.38), PAVEMENT_COLOR, ROAD);
 
+  // Road stripes
   for(var i = 0; i < 21; i++) {
     var leftTop = vec2(-1 + i / 10, -0.49);
     var rightBottom = vec2(-0.97 + i / 10, -0.50);
@@ -422,11 +492,11 @@ function processBuffers(program, colors, vertices) {
   gl.enableVertexAttribArray(vPosition);
 }
 
-/*************************************************************************
-  HSV (Hue-Saturation-Value) to RGB (Red-Green-Blue) Converter
+/*****************************************************************************
+  HSV (Hue-Saturation-Value) to RGB (Red-Green-Blue) Converter (Not Modified)
 
   Taken from https://www.rapidtables.com/convert/color/hsv-to-rgb.html
-**************************************************************************/
+******************************************************************************/
 function hsv2rgb(h, s, v){
   var r, g, b;
 	if( h<0 ) h=0; if( s<0 ) s=0; if( v<0 ) v=0;
@@ -463,4 +533,72 @@ function hsv2rgb(h, s, v){
 	r = Math.round(r); g = Math.round(g); b = Math.round(b);
 
   return [r, g, b];
+}
+
+/************************************************************
+  File creation (Modified)
+
+  Taken from https://stackoverflow.com/questions/21012580/
+    is-it-possible-to-write-data-to-file-using-only-javascript
+*************************************************************/
+var textFile = null,
+  makeTextFile = function (data) {
+    var data = new Blob([JSON.stringify(data)], {type: 'application/json'});
+
+    // If we are replacing a previously generated file we need to
+    // manually revoke the object URL to avoid memory leaks.
+    if (textFile !== null) {
+      window.URL.revokeObjectURL(textFile);
+    }
+
+    textFile = window.URL.createObjectURL(data);
+
+    // returns a URL you can use as a href
+    return textFile;
+  };
+
+/*******************************************************************
+  Draggable UI Elements (Not modified)
+
+  Taken from https://www.w3schools.com/howto/howto_js_draggable.asp
+********************************************************************/
+function dragElement(elmnt) {
+  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  if (document.getElementById(elmnt.id + "Header")) {
+    // if present, the header is where you move the DIV from:
+    document.getElementById(elmnt.id + "Header").onmousedown = dragMouseDown;
+  } else {
+    // otherwise, move the DIV from anywhere inside the DIV:
+    elmnt.onmousedown = dragMouseDown;
+  }
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // get the mouse cursor position at startup:
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    // call a function whenever the cursor moves:
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // calculate the new cursor position:
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    // set the element's new position:
+    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+  }
+
+  function closeDragElement() {
+    // stop moving when mouse button is released:
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
 }
