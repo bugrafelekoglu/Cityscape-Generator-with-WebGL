@@ -1,0 +1,139 @@
+*:focus {
+    outline: none;
+}
+
+.UIBox {
+  width: 360px;
+  height: 250px;
+  padding: 15px 20px;
+  border-radius: 25px;
+  background-color: rgba(33, 150, 243, 0.8);
+  box-shadow: -8px 8px 8px rgba(33, 33, 33, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: space-between;
+  flex-direction: column;
+}
+
+.box {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.box2 {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.numberDiv  {
+  font-weight: 700;
+  font-size: 25px;
+}
+
+.textDiv  {
+  font-size: 19px;
+}
+
+.button {
+  color: rgba(33, 150, 243, 1);
+  height: 30px;
+  width: 100px;
+  background-color: white;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.button:hover {
+  background-color: rgba(11, 106, 185, 1);
+  color: white;
+}
+
+.button:active  {
+  background-color: rgba(6, 64, 111, 1);
+  color: white;
+}
+
+.inputfile {
+	width: 0.1px;
+	height: 0.1px;
+	opacity: 0;
+	overflow: hidden;
+	position: absolute;
+	z-index: -1;
+}
+
+#UI {
+  position: absolute;
+  text-align: center;
+}
+
+#UIHeader {
+  padding-top: 10px;
+  padding-bottom: 5px;
+  border-radius: 25px;
+  cursor: move;
+  background-color: rgba(255, 255, 255, 1);
+  color: rgba(33, 150, 243, 1);
+  font-size: 24px;
+}
+
+#Textbox {
+  border-radius: 15px;
+  height: 28px;
+  padding-left: 15px;
+  padding-right: 15px;
+  border: none;
+  font-size: 16px;
+}
+
+#FileButton {
+  vertical-align: middle;
+  width: 240px;
+  text-align: center;
+
+}
+
+#FileText {
+  padding-top: 5px;
+  font-size: 18px;
+  text-align:center;
+}
+
+#Save {
+  width: 70px;
+}
+
+#Load {
+  width: 70px;
+}
+
+#Generate {
+  background-color: white;
+  color: rgba(240, 30, 30, 1);
+}
+
+#Generate:hover {
+  background-color: rgba(240, 30, 30, 1);
+  color: white;
+}
+
+#Generate:active  {
+  background-color: rgba(182, 12, 12, 1);
+  color: white;
+}
+
+#FinishCloud {
+  width: 150px;
+}
+
+canvas {
+  border: 22px #b5651d;
+  border-style: groove;
+}

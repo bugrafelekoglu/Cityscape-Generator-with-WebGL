@@ -27,30 +27,61 @@
       }
     </script>
 
+    <link rel="stylesheet" type="text/css" href="styles.css">
     <script type="text/javascript" src="../Common/webgl-utils.js"></script>
     <script type="text/javascript" src="../Common/initShaders.js"></script>
     <script type="text/javascript" src="../Common/MV.js"></script>
     <script type="text/javascript" src="cityScape.js"></script>
   </head>
   <body>
-    <canvas id="gl-canvas" width="960" height="540">
+    <canvas id="gl-canvas" width="960" height="540" name="canvas">
     Oops ... your browser doesn't support the HTML5 canvas element
     </canvas>
+    <div id="UI" class="UIBox">
+      <div id="UIHeader">
+        UI Elements
+      </div>
+      <div class="box">
+        <div class="textDiv">
+          Number of houses:
+        </div>
+        <div class="numberDiv">
+          1
+          <input id="sliderN" type="range" min="1" max="5" step="1" value="3" />
+          5
+        </div>
+      </div>
+      <div class="box">
+        <div class="textDiv">
+          Max number of floors:
+        </div>
+        <div class="numberDiv">
+          1
+          <input id="sliderM" type="range" min="1" max="5" step="1" value="3" />
+          5
+        </div>
+      </div>
 
-    <div>
-      Number of houses: 1 <input id="sliderN" type="range"
-       min="1" max="5" step="1" value="3" />
-       5
-    </div>
-    <div>
-      Max number of floors: 1 <input id="sliderM" type="range"
-       min="1" max="5" step="1" value="3" />
-       5
-    </div>
+      <div class="box">
+        <div class="textDiv">
+          File name:
+        </div>
+        <input id="Textbox" type="textarea" size="15">
+        <button id="Save" type="button" class="button">Save</button>
+      </div>
 
-    <button id="Generate" type="button">Generate</button>
-    <button id="Save" type="button">Save</button>
-    <button id="Load" type="button">Load</button>
-    <button id="FinishCloud" type="button">Finish Cloud</button>
+      <div class="box">
+        <label id="FileButton" for="File" class="button">
+          <div id="FileText">Choose a File</div>
+        </label>
+        <input id="File" type="file" class="inputfile">
+        <button id="Load" type="button" class="button">Load</button>
+      </div>
+
+      <div class="box">
+        <button id="FinishCloud" type="button" class="button">Finish Cloud</button>
+        <button id="Generate" type="button" class="button">Generate</button>
+      </div>
+    </div>
   </body>
 </html>
