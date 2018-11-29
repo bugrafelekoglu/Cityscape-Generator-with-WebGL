@@ -5,6 +5,6 @@ Computer Graphics HW 1
 
 [Application page](http://bugra.felekoglu.ug.bilkent.edu.tr/cityScape/src/cityScape.html)
 
-Screenshot:
+Screenshot:<br />
 ![Screenshot](https://i.ibb.co/W3pvrs2/ss.png)
 
